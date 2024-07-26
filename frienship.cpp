@@ -24,7 +24,7 @@ public:
         this->timestamp = time(0);
     }
 
-    void displayMessage() {
+    void displayMessage() const {
         cout << "From: " << sender << ", To: " << receiver << ", Message: " << content << ", Timestamp: " << ctime(&timestamp);
     }
 };
@@ -46,17 +46,17 @@ public:
         members.push_back(userName);
     }
 
-    void addMessage(Message message) {
+    void addMessage(const Message& message) {
         messages.push_back(message);
     }
 
-    void displayGroupInfo() {
+    void displayGroupInfo() const {
         cout << "Group: " << groupName << "\nMembers: ";
-        for (auto &member : members) {
+        for (const auto& member : members) {
             cout << member << " ";
         }
         cout << "\nMessages:\n";
-        for (auto &message : messages) {
+        for (const auto& message : messages) {
             message.displayMessage();
         }
         cout << "\n";
@@ -84,7 +84,8 @@ public:
 // Global Maps
 map<string, User> mapUserName;
 map<string, set<string>> Friends;
-map<pair<string, string>, vector<string>> messages;
+map<pair<string, string>, vector<Message>> userMessages;
+map<string, SocialGroup> groups;
 
 // Functions
 void addUser(string userName, User user) {
@@ -107,18 +108,64 @@ void makeThemFriend(string userName1, string userName2) {
 }
 
 void displayAllUsers() {
-    for (auto &entry : mapUserName) {
+    for (const auto& entry : mapUserName) {
         cout << "Username: " << entry.first << ", Name: " << entry.second.firstName << " " << entry.second.lastName << "\n";
     }
 }
 
 void displayAllFriendships() {
-    for (auto &entry : Friends) {
+    for (const auto& entry : Friends) {
         cout << entry.first << " is friends with: ";
-        for (auto &friendName : entry.second) {
+        for (const auto& friendName : entry.second) {
             cout << friendName << " ";
         }
         cout << "\n";
+    }
+}
+
+void sendMessage(string sender, string receiver, string content) {
+    if (mapUserName.find(sender) != mapUserName.end() && mapUserName.find(receiver) != mapUserName.end()) {
+        Message message(sender, receiver, content);
+        userMessages[{sender, receiver}].push_back(message);
+        message.displayMessage();
+    } else {
+        cout << "One or both usernames do not exist.\n";
+    }
+}
+
+void createGroup(string groupName) {
+    if (groups.find(groupName) == groups.end()) {
+        groups[groupName] = SocialGroup(groupName);
+        cout << "Group " << groupName << " created successfully.\n";
+    } else {
+        cout << "Group name already taken.\n";
+    }
+}
+
+void addMemberToGroup(string groupName, string userName) {
+    if (groups.find(groupName) != groups.end() && mapUserName.find(userName) != mapUserName.end()) {
+        groups[groupName].addMember(userName);
+        cout << "User " << userName << " added to group " << groupName << " successfully.\n";
+    } else {
+        cout << "Group or user does not exist.\n";
+    }
+}
+
+void sendGroupMessage(string groupName, string userName, string content) {
+    if (groups.find(groupName) != groups.end() && mapUserName.find(userName) != mapUserName.end()) {
+        Message message(userName, groupName, content);
+        groups[groupName].addMessage(message);
+        message.displayMessage();
+    } else {
+        cout << "Group or user does not exist.\n";
+    }
+}
+
+void displayGroupInfo(string groupName) {
+    if (groups.find(groupName) != groups.end()) {
+        groups[groupName].displayGroupInfo();
+    } else {
+        cout << "Group does not exist.\n";
     }
 }
 
@@ -163,22 +210,19 @@ int main() {
             cout << "Enter Message Content: ";
             cin.ignore();
             getline(cin, content);
-            Message message(sender, receiver, content);
-            messages[{sender, receiver}].push_back(content);
-            message.displayMessage();
+            sendMessage(sender, receiver, content);
         } else if (choice == 6) {
             string groupName;
             cout << "Enter Group Name: ";
             cin >> groupName;
-            SocialGroup group(groupName);
-            cout << "Group " << groupName << " created successfully.\n";
+            createGroup(groupName);
         } else if (choice == 7) {
             string groupName, userName;
             cout << "Enter Group Name: ";
             cin >> groupName;
             cout << "Enter Username: ";
             cin >> userName;
-            // Add the user to the group here
+            addMemberToGroup(groupName, userName);
         } else if (choice == 8) {
             string groupName, userName, content;
             cout << "Enter Group Name: ";
@@ -188,12 +232,12 @@ int main() {
             cout << "Enter Message Content: ";
             cin.ignore();
             getline(cin, content);
-            // Add the message to the group here
+            sendGroupMessage(groupName, userName, content);
         } else if (choice == 9) {
             string groupName;
             cout << "Enter Group Name: ";
             cin >> groupName;
-            // Display the group info here
+            displayGroupInfo(groupName);
         } else if (choice == 10) {
             break;
         } else {
@@ -203,4 +247,3 @@ int main() {
 
     return 0;
 }
-
